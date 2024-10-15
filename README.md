@@ -7,12 +7,15 @@ Implements floating point decimal 64 as defined by IEEE 754-2008, using binary e
 coefficient. Values are encoded in a 64 bit unsigned integer. 
 
 The implementations is mostly complying to the standard. However, all coefficient values are 
-kept normalised in range. Subnormal values are not represented and will be rounded to zero.
+kept normalised, that is in range 1e15 to 1e16 - 1. Subnormal values are not represented 
+and will be rounded to zero.
 
 Encodes floating point values in range 1.000... e -383 to 9.999... e 384 with 16 digits precision 
 in the full range.
 
 The implementation handles +/- zero, +/- infinity and nan values.
+
+Rounding is done with tie to even in all arithmetic operations and type conversions.
 
 Rounding is 
 
