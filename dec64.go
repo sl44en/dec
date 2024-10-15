@@ -193,11 +193,6 @@ func MaxValue() Dec64 {
 	return Dec64{MAX_POSITIVE}
 }
 
-/*
-func PosMin() Dec64 {
-	return Dec64{MIN_POSITIVE}
-}
-*/
 
 // MinPos returns minimum positive value: 1.000...e-383
 // Subnormal numbers are not supported
@@ -223,7 +218,7 @@ func (self Dec64) IsInf() bool {
 func (self Dec64) IsZero() bool {
 	// There a many encodings for zero
 	// a type 1 number with coefficient 0 is a zero
-	// in most (all) cases the below would be enough
+	// in most cases the below would be enough
 	// but -0 and multiple allowed exponent values come in the way
 	//     if self.d == 0 { return true }
 	v0 := self.d
