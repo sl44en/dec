@@ -69,77 +69,139 @@ func mulEncode(sgn, e, c DecBase) Dec64 {
 	return Dec64{sgn}
 }
 
+// Standard bits.Div64 modified for division by constant, utilising compiler optimisation
+// for division by constant
+func div64_e15(hi, lo uint64) (uint64, uint64) {
 
-func encodeOverflow(s uint64, e int, c DecBase) Dec64 {
+	// const parameters for divisor
+	const (
+		divisor = 1_000_000_000_000_000
+		dbitlen = 50 // bitlength of divisor
+	)
+	// debug_assert(dbitlen == bits.Len64(divisor))
+	// debug_assert(hi < divisor)
 
-	debug_assert(c >= E_DIGITS_1 && c <= E_DIGITS)
+	// environment constants
+	const (
+		wbitlen = 64          // word bit length
+		hbitlen = wbitlen / 2 // half word bit length
+		b       = 1 << hbitlen
+		mask    = b - 1
+	)
 
-	if c == E_DIGITS {
-		c = E_DIGITS_1
-		e++
-	}
+	// parameterisation of divisor constants
+	const (
+		s   = wbitlen - dbitlen // LeadingZeros64(divisor)
+		yn  = divisor << s
+		yn1 = yn >> hbitlen
+		yn0 = yn & mask
+	)
 
-	// exp too low leads to underflow -> ZERO
-	// too avoid overflow from silly input values, e is not upadted
-	// with adjustemnt from normalise until after check
-	if e < EXP_MIN_NORM {
-		return Dec64{s}
-	}
+	var q1, q0, un, un10, un1, un0, rhat, c1, c2 uint64
 
-	// exp too high leads to overflow -> Infinity
-	if e > EXP_MAX_NORM {
-		return Dec64{s | INF_PATTERN}
-	}
+	un = hi<<s | lo>>(wbitlen-s)
+	un10 = lo << s
+	un1 = un10 >> hbitlen
+	un0 = un10 & mask
 
-	return encodeFinal(s, e, c)
-}
-
-func (a Dec64) iMul(b Dec64) Dec64 {
-
-	t1, s1, e1, c1 := decode(a)
-	t2, s2, e2, c2 := decode(b)
-	s := s1 ^ s2
-	var c, rem, mhi, mlo uint64
-
-	switch t1 | t2 {
-
-	case decNormal:
-
-		// perfom multiplication; result in double word
-		mhi, mlo = bits.Mul64(c1, c2)
-
-		// result is 31 or 32 decimal digits, because coefficients are normalsed to 16 digits
-		// compare with 1e31, calculated as a double word, to determine where to round
-		// if c1*c2 < 1e31:
-		// if LT(mhi, mlo, rangeSepHi, rangeSepLo) : a1 < b1 || (a1 == b1 && a2 < b2)
-
-		if mhi < rangeSepHi || (mhi == rangeSepHi && mlo < rangeSepLo) {
-			// low range: m is 31 digits: divide by e15
-			c, rem = bits.Div64(mhi, mlo, E_DIGITS_1)
-			debug_assert(c >= E_DIGITS_1 && c < E_DIGITS)
-			// encode will round and adjust for coefficient overflow from rounding
-			// eg 5005 * 1998 -> 9999.99 for 4 digit mantissa, needs rounding and may overflow
-			c = roundEven(c, rem, E_DIGITS_1)
-			return encodeOverflow(s, e1+e2+DIGITS_1, c)
+	q1 = un / yn1
+	rhat = un % yn1
+	
+	// from the blog of ridiculousfish.com (libdivide)
+	// we have an alternative approach to quotient correction
+	c1 = q1 * yn0
+	c2 = rhat*b + un1
+	if c1 > c2 {
+		q1--
+		if c1-c2 > yn {
+			q1--
 		}
-		// high range: m is 32 digits: divide by e16
-		c, rem = bits.Div64(mhi, mlo, E_DIGITS)
-		debug_assert(c >= E_DIGITS_1 && c < E_DIGITS)
-		// round; there can be no coeeficient overflow in the high range
-		c = roundEven(c, rem, E_DIGITS)
-		return encodeNormalised(s, e1+e2+DIGITS, c)
-
-	case decZero, decZero | decNormal:
-		// zero * zero/normal -> zero result
-		return Dec64{s}
-
-	case decNormal | decInf, decInf:
-		return Dec64{s | INF_PATTERN}
-
-	default:
-		return NaN()
 	}
+
+	un = un*b + un1 - q1*yn
+	q0 = un / yn1
+	rhat = un % yn1
+
+	c1 = q0 * yn0
+	c2 = rhat*b + un0
+	if c1 > c2 {
+		q0--
+		if c1-c2 > yn {
+			q0--
+		}
+	}
+
+	return q1*b + q0, (un*b + un0 - q0*yn) >> s
 }
+
+func div64_e16(hi, lo uint64) (uint64, uint64) {
+
+	// const parameters for divisor
+	const (
+		divisor = 10_000_000_000_000_000
+		dbitlen = 54 // bitlength of divisor
+	)
+	// debug_assert(dbitlen == bits.Len64(divisor))
+	// debug_assert(hi < divisor)
+
+	// environment constants
+	const (
+		wbitlen = 64          // word bit length
+		hbitlen = wbitlen / 2 // half word bit length
+		b       = 1 << hbitlen
+		mask    = b - 1
+	)
+
+	// parameterisation of divisor constants
+	const (
+		s   = wbitlen - dbitlen // LeadingZeros64(divisor)
+		yn  = divisor << s
+		yn1 = yn >> hbitlen
+		yn0 = yn & mask
+	)
+
+	var q1, q0, un, un10, un1, un0, rhat, c1, c2 uint64
+
+	un = hi<<s | lo>>(wbitlen-s)
+	un10 = lo << s
+	un1 = un10 >> hbitlen
+	un0 = un10 & mask
+
+	q1 = un / yn1
+	rhat = un % yn1
+	
+	// from the blog of ridiculousfish.com (libdivide)
+	// we have an alternative approach to quotient correction
+	c1 = q1 * yn0
+	c2 = rhat*b + un1
+	if c1 > c2 {
+		q1--
+		if c1-c2 > yn {
+			q1--
+		}
+	}
+
+	un = un*b + un1 - q1*yn
+	q0 = un / yn1
+	rhat = un % yn1
+
+	c1 = q0 * yn0
+	c2 = rhat*b + un0
+	if c1 > c2 {
+		q0--
+		if c1-c2 > yn {
+			q0--
+		}
+	}
+
+	return q1*b + q0, (un*b + un0 - q0*yn) >> s
+}
+
+
+
+
+// ----------------------------------
+
 
 // const EXP_BIAS = EXP_MAX + P - 2
 const EXP_ZERO_BIAS = EXP_MAX - 2
@@ -161,14 +223,15 @@ func (a Dec64) Mul(b Dec64) Dec64 {
 		// result is 31 or 32 decimal digits, because coefficients are normalsed to 16 digits
 		// compare with 1e31, calculated as a double word, to determine where to round
 		// if c1*c2 < 1e31:
-		// if LT(mhi, mlo, rangeSepHi, rangeSepLo) : a1 < r1 || (a1 == r1 && a2 < r2)
-
+		// if (mhi, mlo) < (rangeSepHi, rangeSepLo): 
 		if mhi < rangeSepHi || (mhi == rangeSepHi && mlo < rangeSepLo) {
 			// low range: m is 31 digits: divide by e15
-			c, rem = bits.Div64(mhi, mlo, E_DIGITS_1)
+			// c, rem = bits.Div64(mhi, mlo, E_DIGITS_1)
+			c, rem = div64_e15(mhi, mlo)
 			debug_assert(c >= E_DIGITS_1 && c < E_DIGITS)
-			// encode will round and adjust for coefficient overflow from rounding
-			// eg 5005 * 1998 -> 9999.99 for 4 digit mantissa, needs rounding and may overflow
+			// round and adjust for coefficient overflow from rounding
+			// eg 5005 * 1998 -> 9999990 -> 9999.990 for 4 digit mantissa, 
+			// needs rounding and will overflow
 			c = roundEven(c, rem, E_DIGITS_1)
 			if c == E_DIGITS {
 				// c ends in hi range after rounding
@@ -178,7 +241,8 @@ func (a Dec64) Mul(b Dec64) Dec64 {
 			return mulEncode(s, e-1, c)
 		}
 		// high range: m is 32 digits: divide by e16
-		c, rem = bits.Div64(mhi, mlo, E_DIGITS)
+		// c, rem = bits.Div64(mhi, mlo, E_DIGITS)
+		c, rem = div64_e16(mhi, mlo)
 		debug_assert(c >= E_DIGITS_1 && c < E_DIGITS)
 		// round; there can be no coeeficient overflow in the high range
 		c = roundEven(c, rem, E_DIGITS)
@@ -192,7 +256,7 @@ func (a Dec64) Mul(b Dec64) Dec64 {
 		return Dec64{s | INF_PATTERN}
 
 	default:
-		return NaN()
+		return Dec64{NAN_PATTERN}
 	}
 }
 
@@ -234,7 +298,7 @@ func (a Dec64) Div(b Dec64) Dec64 {
 			// to next, add carry. distance to next is c2
 
 			//return encodeOverflow(s, e1-e2-DIGITS, roundUp(c, rem, c2))
-			// I dont think there can be overfloe - proof outstanding
+			// I dont think there can be overflow - proof outstanding
 			c = roundEven(c, rem, c2)
 			return mulEncode(s, e, c)
 		}
@@ -250,63 +314,7 @@ func (a Dec64) Div(b Dec64) Dec64 {
 
 	default:
 		// 0/0, Inf/Inf and anything involving a nan -> nan
-		return NaN()
+		return Dec64{NAN_PATTERN}
 	}
 }
 
-func (a Dec64) iDiv(b Dec64) Dec64 {
-
-	t1, s1, e1, c1 := decode(a)
-	t2, s2, e2, c2 := decode(b)
-	s := s1 ^ s2
-	var mhi, mlo uint64
-
-	switch t1 | t2 {
-
-	case decNormal:
-
-		if c1 >= c2 {
-			// then c1 / c2  >= 1
-			// result in range 1.000 - 9.999 (for a for digit mantissa, rounded)
-			// scale up with 10^(P-1) to get division result inrange
-			mhi, mlo = bits.Mul64(c1, E_DIGITS_1)
-			c, rem := bits.Div64(mhi, mlo, c2)
-			debug_assert(E_DIGITS_1 <= c && c < E_DIGITS)
-
-			// if remainder is more than half way or equal
-			// to next, add carry. distance to next is c2
-			// rounding will not overflow coefficient
-			c = roundEven(c, rem, c2)
-			return encodeNormalised(s, e1-e2-DIGITS_1, c)
-
-		} else {
-			// c1 < c2 =>  c1 / c2 < 1
-			// result in range 0.1000 - 0.9999 (for a four digit mantissa, rounded)
-			// scale up with 10^P to get division result inrange
-			mhi, mlo = bits.Mul64(c1, E_DIGITS)
-			c, rem := bits.Div64(mhi, mlo, c2)
-			debug_assert(E_DIGITS_1 <= c && c < E_DIGITS)
-
-			// if remainder is more than half way or equal
-			// to next, add carry. distance to next is c2
-
-			//return encodeOverflow(s, e1-e2-DIGITS, roundUp(c, rem, c2))
-			// I dont think there can be overfloe - proof outstanding
-			c = roundEven(c, rem, c2)
-			return encodeNormalised(s, e1-e2-DIGITS, c)
-		}
-
-	case decZero | decNormal, decZero | decInf, decNormal | decInf:
-		if t1 < t2 {
-			// zero result
-			return Dec64{s}
-		} else {
-			// inf result
-			return Dec64{s | INF_PATTERN}
-		}
-
-	default:
-		// 0/0, Inf/Inf and anything involving a nan -> nan
-		return NaN()
-	}
-}

@@ -49,6 +49,7 @@ func trivialDivPow10(c uint64, e int) (uint64, uint64, uint64) {
 // -------------------------------------------------------------------------
 
 var suma uint64
+var Keep1 uint64
 
 // it seems to make sense with this function
 func BenchmarkDivPow10(b *testing.B) {
@@ -58,8 +59,8 @@ func BenchmarkDivPow10(b *testing.B) {
 			for _, d := range testDivPowData {
 				a, b, _ := divPow10(d, v)
 
-				suma += a
-				suma += b
+				Keep1 = a
+				Keep1 = b
 
 			}
 		}
@@ -76,8 +77,8 @@ func BenchmarkDivPow10X(b *testing.B) {
 				a, b, _ := divPow10X(d, v)
 				// a, b, _ := FFUNCS[v](d)
 
-				suma += a
-				suma += b
+				Keep1 = a
+				Keep1 = b
 
 			}
 		}
@@ -93,8 +94,8 @@ func BenchmarkTrivialDivPow10(b *testing.B) {
 			for _, d := range testDivPowData {
 				a, b, _ := trivialDivPow10(d, v)
 
-				suma += a
-				suma += b
+				Keep1 = a
+				Keep1 = b
 
 			}
 		}
@@ -111,8 +112,8 @@ func BenchmarkDivPow10_2(b *testing.B) {
 				f := Pow10(v)
 				a, b, _ := d/f, d%f, f
 
-				suma += a
-				suma += b
+				Keep1 = a
+				Keep1 = b
 
 			}
 		}
@@ -129,8 +130,8 @@ func BenchmarkDivPow10_3(b *testing.B) {
 				const f = e11
 				a, b, _ := d/f, d%f, f
 
-				suma += a
-				suma += b
+				Keep1 = a
+				Keep1 = b
 
 			}
 		}

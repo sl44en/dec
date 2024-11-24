@@ -3,11 +3,10 @@ package dec64
 import (
 //	"fmt"
 //	"math"
-	// "math/bits"
-	// "strconv"
+//
+// "math/bits"
+// "strconv"
 )
-
-
 
 // Decimal Floating point classification
 const (
@@ -16,7 +15,6 @@ const (
 	decInf    = 4
 	decNan    = 8
 )
-
 
 // ---------------------------------------------------------------------------------
 // type definitions: decimal floating point 64 bit
@@ -115,7 +113,7 @@ func encodeAny(sgn uint64, e int, c DecBase) Dec64 {
 	sgn &= SIGN_MASK
 
 	if c == 0 {
-		// allow for signed zero
+		// signed zero
 		return Dec64{sgn}
 	}
 
@@ -135,7 +133,7 @@ func encodeAny(sgn uint64, e int, c DecBase) Dec64 {
 			// divide coefficient down and round
 			c = roundEven(divPow10(c, f))
 		}
-		// rounding can in turn overflow,
+		// rounding can in turn overflow coefficient,
 		if c == E_DIGITS {
 			c = E_DIGITS_1
 			f++
@@ -164,11 +162,11 @@ func Inf(sign int) Dec64 {
 	return Dec64{boolToSign(sign < 0) | INF_PATTERN}
 
 }
-func NegInf(sign int) Dec64 {
+func NegInf() Dec64 {
 	return Dec64{SIGN_MASK | INF_PATTERN}
 }
 
-func PosInf(sign int) Dec64 {
+func PosInf() Dec64 {
 	return Dec64{INF_PATTERN}
 }
 
@@ -193,13 +191,11 @@ func MaxValue() Dec64 {
 	return Dec64{MAX_POSITIVE}
 }
 
-
 // MinPos returns minimum positive value: 1.000...e-383
 // Subnormal numbers are not supported
 func MinPosValue() Dec64 {
 	return Dec64{MIN_POSITIVE}
 }
-
 
 // classifications
 
@@ -292,7 +288,7 @@ func (self Dec64) ILog10() int {
 
 // return negated value
 func (self Dec64) Neg() Dec64 {
-	// what about negative Nan?? - its still Nan of course
+	// what about negative Nan?? - its still Nan of course - negative nan is allowed
 	// this allows for negative nan, and negative zero ofcourse
 	// maybe this should check normal values
 	return Dec64{self.d ^ SIGN_MASK}
@@ -325,7 +321,7 @@ func (self Dec64) MulPow10(p int) Dec64 {
 // using the binary encoding for the significand
 
 // restrictions
-// -0 is not supported
+// 
 // Coefficient is always normalised
 // Subnormal cooefficients are not handled and not produced as results
 //     subnormal values are rounded to zero
@@ -403,7 +399,7 @@ const EXP_MASK = (1 << EXP_BITS) - 1
 // constants related to exponents.
 // they are defined as signed i32 to facilitate the conversion
 // between biased and unbiased exponents.
-// const SDIGITS = DIGITS
+
 const DIGITS_1 = DIGITS - 1
 
 //const EXP_RANGE = 48 * (2 << (2 * K))
@@ -432,7 +428,7 @@ const TOP_T1_COEFFICIENT = 1 << COEFFICIENT_BITS_T1
 
 // need values for max number, minpositive, in addition to zero andsimilar
 
-// va,ues
+// Values
 const ONE_PATTERN = ((EXP_BIAS - DIGITS_1) << EXP_SHIFT_T1) | E_DIGITS_1
 const MIN_POSITIVE = E_DIGITS_1
 const MAX_POSITIVE = MSB_MASK | 0x2FF<<EXP_SHIFT_T2 | E_DIGITS_M&COEFF_MASK_T2

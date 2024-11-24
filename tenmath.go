@@ -132,7 +132,7 @@ func divPow10X(c uint64, e int) (uint64, uint64, uint64) {
 // utilise division by constants
 // benchmark (amd64) shows 113 ns for this, 130 ns for the above simpler version
 
-// divide på 10 power modulo 16. We dont need 10 powers higher than 15 here
+// divide  10 power modulo 16. We dont need 10 powers higher than 15 here
 func divPow10(c uint64, e int) (uint64, uint64, uint64) {
 	return FFUNCS[uint(e)](c)
 }

@@ -1,7 +1,5 @@
 package dec64
 
-
-
 import (
 	"fmt"
 	"math"
@@ -9,8 +7,6 @@ import (
 	// "strconv"
 	"testing"
 )
-
-
 
 // --------------------------------------------------------------------
 // code and example in same package, for now
@@ -194,15 +190,14 @@ func Example() {
 
 }
 
-
 func TestFrom(t *testing.T) {
-/*
-	minf := Inf(-1)
-	inf := Inf(1)
-	nan := NaN()
-	zero := Zero()
+	/*
+		minf := Inf(-1)
+		inf := Inf(1)
+		nan := NaN()
+		zero := Zero()
 	*/
-	
+
 	var a, b Dec64
 
 	a = FromScientific(1, -383)
@@ -218,7 +213,6 @@ func TestFrom(t *testing.T) {
 	if !a.Equal(b) {
 		t.Error("Creation error", a, "!=", b)
 	}
-
 
 }
 

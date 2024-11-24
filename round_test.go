@@ -160,39 +160,37 @@ func TestRoundingPrimitives2(t *testing.T) {
 			c2 := roundEvenX(divPow10(d, v))
 
 			if c != c2 {
-			
+
 				t.Error("Rounding primitive error", d, v, c, c2)
-				
+
 			}
 		}
 	}
 }
 
-
 func TestRoundFuncs(t *testing.T) {
 
 	testRound := func(rf func(Dec64) Dec64, x, r Dec64) {
-	y := rf(x)
-	if !y.Equal(r) {
-	
-	t.Error("Rounding failed", x, y, r)
-	
-	}
+		y := rf(x)
+		if !y.Equal(r) {
+
+			t.Error("Rounding failed", x, y, r)
+
+		}
 	}
 
-	testRound(Dec64.Round, FromInt(9999_9999_9999_9999),FromInt(9999_9999_9999_9999))
-	testRound(Dec64.Round, FromInt(9999_9999_9999_999),FromInt(9999_9999_9999_999))
-	testRound(Dec64.Round, FromExpInt(-1, 9999_9999_9999_9999),FromInt(1000_0000_0000_0000))
-	testRound(Dec64.Round, FromExpInt(-8, 9999_9999_9999_9999),FromInt(1000_0000_0))
-	testRound(Dec64.Round, FromExpInt(-15, 9999_9999_9999_9999),FromInt(10))
-	testRound(Dec64.Round, FromExpInt(-16, 9999_9999_9999_9999),FromInt(1))
-	testRound(Dec64.Round, FromExpInt(-17, 9999_9999_9999_9999),FromInt(0))
-	testRound(Dec64.Round, FromExpInt(-2, 1234_5678_9012_3456),FromInt(1234_5678_9012_35))
-	testRound(Dec64.Round, FromExpInt(-3, 1234_5678_9012_3456),FromInt(1234_5678_9012_3))
-	testRound(Dec64.Round, FromExpInt(-3, 1234_5678_0000_0000),FromInt(1234_5678_0000_0))
-	
+	testRound(Dec64.Round, FromInt(9999_9999_9999_9999), FromInt(9999_9999_9999_9999))
+	testRound(Dec64.Round, FromInt(9999_9999_9999_999), FromInt(9999_9999_9999_999))
+	testRound(Dec64.Round, FromExpInt(-1, 9999_9999_9999_9999), FromInt(1000_0000_0000_0000))
+	testRound(Dec64.Round, FromExpInt(-8, 9999_9999_9999_9999), FromInt(1000_0000_0))
+	testRound(Dec64.Round, FromExpInt(-15, 9999_9999_9999_9999), FromInt(10))
+	testRound(Dec64.Round, FromExpInt(-16, 9999_9999_9999_9999), FromInt(1))
+	testRound(Dec64.Round, FromExpInt(-17, 9999_9999_9999_9999), FromInt(0))
+	testRound(Dec64.Round, FromExpInt(-2, 1234_5678_9012_3456), FromInt(1234_5678_9012_35))
+	testRound(Dec64.Round, FromExpInt(-3, 1234_5678_9012_3456), FromInt(1234_5678_9012_3))
+	testRound(Dec64.Round, FromExpInt(-3, 1234_5678_0000_0000), FromInt(1234_5678_0000_0))
+
 }
-
 
 //
 // --------------------------------------------------------------------------
